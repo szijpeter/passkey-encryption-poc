@@ -1,0 +1,14 @@
+# Environment files with secrets
+.env.local
+
+# IDE
+*.iml
+.idea/
+
+# Gradle
+.gradle/
+build/
+local.properties
+
+# OS
+.DS_Store
