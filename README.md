@@ -28,6 +28,52 @@ This project validates that:
 └──────────────────┘         └──────────────────┘
 ```
 
+## What is the WebAuthn PRF Extension?
+
+The **[PRF (Pseudo-Random Function) extension](https://w3c.github.io/webauthn/#prf-extension)** is a WebAuthn Level 3 feature that enables authenticators to generate cryptographically strong secret keys for client-side encryption. Unlike standard WebAuthn authentication (which generates unique signatures each time), PRF produces **deterministic outputs** that can be used for deriving encryption keys.
+
+### Technical Details
+
+- **Underlying Algorithm**: HMAC-SHA-256
+- **Output Size**: 32 bytes (256 bits)
+- **Input**: Salt value (provided by the relying party)
+- **Deterministic**: Same salt + same passkey credential = same PRF output
+- **Security**: PRF output is derived from a credential-specific internal key that never leaves the authenticator's secure element
+
+### How It Works
+
+When you invoke the PRF extension during WebAuthn authentication:
+
+1. **Input**: You provide a salt (arbitrary byte sequence)
+2. **Computation**: The authenticator computes `HMAC-SHA-256(credential_internal_key, salt)`
+3. **Output**: Returns a 32-byte pseudo-random value
+4. **Key Derivation**: This output can be used directly or as input to a KDF (like HKDF) to derive encryption keys
+
+### Key Benefits for Client-Side Encryption
+
+1. **Zero Server Knowledge**: The PRF output never leaves the client device, enabling true end-to-end encryption where the server cannot access plaintext data
+2. **Deterministic Key Generation**: Same passkey + same salt always produces the same encryption key, allowing data to be encrypted once and decrypted later
+3. **Hardware-Backed Security**: PRF computation happens within the authenticator's secure element (e.g., TPM, Secure Enclave, Android StrongBox)
+4. **No Key Storage**: Encryption keys are derived on-demand rather than stored, reducing attack surface
+5. **Phishing Resistant**: Inherits WebAuthn's origin-binding properties—PRF outputs differ across domains
+
+### Use Cases
+
+- **Password Managers**: Encrypt vaults using passkey-derived keys (e.g., Bitwarden)
+- **Identity Wallets**: Secure credential storage without server-side decryption
+- **Non-Custodial Wallets**: Cryptocurrency wallets where private keys never leave the device
+- **Sensitive Document Storage**: Client-side document encryption in cloud storage applications
+- **End-to-End Encrypted Messaging**: Derive message encryption keys from passkeys
+
+### Browser and Platform Support
+
+The PRF extension is currently available in:
+- **Chromium-based browsers** (Chrome, Edge) on desktop and Android
+- **Android 14+** with Google Password Manager and up-to-date Play Services
+- **iOS/macOS**: Limited support (check latest compatibility)
+
+> **Note**: PRF support requires both browser/platform support AND authenticator support. Not all authenticators implement the PRF extension.
+
 ## Project Structure
 
 ```
@@ -173,10 +219,21 @@ PRF extension not supported. Check:
 
 ## Resources
 
-- [WebAuthn PRF Extension](https://w3c.github.io/webauthn/#prf-extension)
-- [Android Credential Manager](https://developer.android.com/training/sign-in/passkeys)
-- [webauthn4j](https://github.com/webauthn4j/webauthn4j)
-- [passkeyprf.com](https://passkeyprf.com) - PRF extension playground
+### WebAuthn PRF Extension
+
+- [W3C WebAuthn PRF Extension Specification](https://w3c.github.io/webauthn/#prf-extension) - Official technical specification
+- [PRF, WebAuthn and its Role in Passkeys](https://bitwarden.com/blog/prf-webauthn-and-its-role-in-passkeys/) - Bitwarden's comprehensive guide to PRF
+- [passkeyprf.com](https://passkeyprf.com) - Interactive PRF extension playground for testing
+
+### Android Development
+
+- [Android Credential Manager](https://developer.android.com/training/sign-in/passkeys) - Official Android passkey documentation
+- [Android Credential Manager API Reference](https://developer.android.com/reference/androidx/credentials/CredentialManager)
+
+### Server-Side Libraries
+
+- [webauthn4j](https://github.com/webauthn4j/webauthn4j) - Java/Kotlin WebAuthn library used in this project
+
 
 ## License
 
