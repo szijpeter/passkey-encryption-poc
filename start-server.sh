@@ -3,18 +3,44 @@
 
 cd "$(dirname "$0")"
 
-# Load environment variables from .env.local if it exists
-if [ -f .env.local ]; then
-    export $(grep -v '^#' .env.local | xargs)
-    echo "✅ Loaded environment from .env.local"
-else
-    echo "⚠️  No .env.local found. Copy .env.example to .env.local and fill in your values."
+# Load configuration from local.properties
+PROPS_FILE="local.properties"
+if [ ! -f "$PROPS_FILE" ]; then
+    echo "⚠️  No local.properties found. Copy local.properties.example to local.properties and fill in your values."
     exit 1
 fi
 
+read_prop() {
+    local key="$1"
+    local line
+    line=$(
+        awk -F= -v key="$key" '
+            /^[[:space:]]*#/ { next }
+            {
+                k=$1
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", k)
+                if (k == key) {
+                    val = substr($0, index($0, $2))
+                    sub(/^[[:space:]]+/, "", val)
+                    print val
+                }
+            }
+        ' "$PROPS_FILE" | tail -n 1 | tr -d '\r'
+    )
+    if [ -n "$line" ]; then
+        echo "$line"
+    fi
+}
+
+APP_SHA256_FINGERPRINT="$(read_prop "android.sha256")"
+NGROK_DOMAIN="$(read_prop "ngrok.domain")"
+IOS_TEAM_ID="$(read_prop "ios.teamId")"
+IOS_BUNDLE_ID="$(read_prop "ios.bundleId")"
+IOS_APP_ID="$(read_prop "ios.appId")"
+
 # Check required vars
 if [ -z "$APP_SHA256_FINGERPRINT" ]; then
-    echo "❌ APP_SHA256_FINGERPRINT not set in .env.local"
+    echo "❌ android.sha256 not set in local.properties"
     exit 1
 fi
 
@@ -54,9 +80,19 @@ echo ""
 # Set environment variables for the server
 export RP_ID="$NGROK_DOMAIN_EXTRACTED"
 export ORIGIN="$NGROK_URL"
+export APP_SHA256_FINGERPRINT="$APP_SHA256_FINGERPRINT"
+if [ -n "$IOS_TEAM_ID" ]; then
+    export IOS_TEAM_ID="$IOS_TEAM_ID"
+fi
+if [ -n "$IOS_BUNDLE_ID" ]; then
+    export IOS_BUNDLE_ID="$IOS_BUNDLE_ID"
+fi
+if [ -n "$IOS_APP_ID" ]; then
+    export IOS_APP_ID="$IOS_APP_ID"
+fi
 
-# Update local.properties with server URL for Android app
-echo "📱 Updating local.properties for Android app..."
+# Update local.properties with server URL for Android/iOS apps
+echo "📱 Updating local.properties for apps..."
 if [ -f local.properties ]; then
     # Remove existing server.url line if present
     grep -v "^server.url=" local.properties > local.properties.tmp
@@ -72,7 +108,13 @@ echo "   ORIGIN: $ORIGIN"
 echo "   ANDROID_ORIGIN: $ANDROID_ORIGIN"
 echo "   APP_SHA256_FINGERPRINT: ${APP_SHA256_FINGERPRINT:0:20}..."
 echo ""
-echo "💡 Rebuild the Android app to pick up the new server URL"
+if [ -x "./scripts/sync-ios-entitlements.sh" ]; then
+    ./scripts/sync-ios-entitlements.sh
+else
+    echo "⚠️  Missing scripts/sync-ios-entitlements.sh; entitlements not updated"
+fi
+echo ""
+echo "💡 Rebuild the Android/iOS apps to pick up the new server URL"
 echo ""
 
 # Cleanup on exit

@@ -19,6 +19,25 @@ data class AssetLinkTarget(
         val sha256_cert_fingerprints: List<String>
 )
 
+@Serializable
+data class AppleAppSiteAssociation(
+        val webcredentials: AppleWebCredentials
+)
+
+@Serializable
+data class AppleWebCredentials(
+        val apps: List<String>
+)
+
+private fun iosAppId(): String {
+    val explicit = System.getenv("IOS_APP_ID")
+    if (!explicit.isNullOrBlank()) return explicit
+
+    val teamId = System.getenv("IOS_TEAM_ID") ?: "TEAMID"
+    val bundleId = System.getenv("IOS_BUNDLE_ID") ?: "com.example.passkeyprfpoc.ios"
+    return "$teamId.$bundleId"
+}
+
 fun Route.assetLinksRoute() {
     route("/.well-known") {
         get("/assetlinks.json") {
@@ -52,6 +71,25 @@ fun Route.assetLinksRoute() {
                     ContentType.Application.Json
             )
         }
+
+        get("/apple-app-site-association") {
+            val association =
+                    AppleAppSiteAssociation(webcredentials = AppleWebCredentials(apps = listOf(iosAppId())))
+            call.respondText(
+                    Json.encodeToString(AppleAppSiteAssociation.serializer(), association),
+                    ContentType.Application.Json
+            )
+        }
+    }
+
+    // Apple also allows the AASA file at the root path.
+    get("/apple-app-site-association") {
+        val association =
+                AppleAppSiteAssociation(webcredentials = AppleWebCredentials(apps = listOf(iosAppId())))
+        call.respondText(
+                Json.encodeToString(AppleAppSiteAssociation.serializer(), association),
+                ContentType.Application.Json
+        )
     }
 
     // Health check
