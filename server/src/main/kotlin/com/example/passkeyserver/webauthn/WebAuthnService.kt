@@ -3,14 +3,15 @@ package com.example.passkeyserver.webauthn
 import com.example.passkeyserver.model.*
 import com.example.passkeyserver.storage.CredentialStorage
 import com.webauthn4j.WebAuthnManager
-import com.webauthn4j.authenticator.AuthenticatorImpl
 import com.webauthn4j.converter.AttestedCredentialDataConverter
 import com.webauthn4j.converter.util.ObjectConverter
 import com.webauthn4j.data.*
 import com.webauthn4j.data.attestation.statement.COSEAlgorithmIdentifier
 import com.webauthn4j.data.client.Origin
 import com.webauthn4j.data.client.challenge.DefaultChallenge
+import com.webauthn4j.credential.CredentialRecordImpl
 import com.webauthn4j.server.ServerProperty
+import com.webauthn4j.data.AuthenticatorTransport
 import java.security.SecureRandom
 import java.util.Base64
 
@@ -95,7 +96,12 @@ class WebAuthnService(
                                         )
 
                         val challenge = DefaultChallenge(challengeData.challenge)
-                        val serverProperty = ServerProperty(allowedOrigins, rpId, challenge, null)
+                        val serverProperty =
+                                ServerProperty.builder()
+                                        .origins(allowedOrigins)
+                                        .rpId(rpId)
+                                        .challenge(challenge)
+                                        .build()
 
                         val registrationRequest =
                                 RegistrationRequest(attestationObject, clientDataJSON)
@@ -235,7 +241,12 @@ class WebAuthnService(
                                         )
 
                         val challenge = DefaultChallenge(challengeData.challenge)
-                        val serverProperty = ServerProperty(allowedOrigins, rpId, challenge, null)
+                        val serverProperty =
+                                ServerProperty.builder()
+                                        .origins(allowedOrigins)
+                                        .rpId(rpId)
+                                        .challenge(challenge)
+                                        .build()
 
                         // Reconstruct authenticator from stored data
                         val attestedCredentialDataConverter =
@@ -243,44 +254,55 @@ class WebAuthnService(
                         val attestedCredentialData =
                                 attestedCredentialDataConverter.convert(storedCredential.publicKey)
 
-                        val authenticator =
-                                AuthenticatorImpl(
-                                        attestedCredentialData,
-                                        null,
-                                        storedCredential.signCount
+                        val transports =
+                                storedCredential.transports
+                                        ?.map { AuthenticatorTransport.create(it) }
+                                        ?.toSet()
+                        val credentialRecord =
+                                CredentialRecordImpl(
+                                    /* attestationStatement = */ null,
+                                    /* uvInitialized = */ null,
+                                    /* backupEligible = */ null,
+                                    /* backupState = */ null,
+                                    /* counter = */ storedCredential.signCount,
+                                    /* attestedCredentialData = */ attestedCredentialData,
+                                    /* authenticatorExtensions = */ null,
+                                    /* clientData = */ null,
+                                    /* clientExtensions = */ null,
+                                    /* transports = */ transports
                                 )
 
                         val authenticationRequest =
                                 AuthenticationRequest(
-                                        credentialId,
-                                        request.response.userHandle?.let {
+                                    /* credentialId = */ credentialId,
+                                    /* userHandle = */ request.response.userHandle?.let {
                                                 Base64.getUrlDecoder().decode(it)
                                         },
-                                        authenticatorData,
-                                        clientDataJSON,
-                                        null, // clientExtensionsJSON
-                                        signature
+                                    /* authenticatorData = */ authenticatorData,
+                                    /* clientDataJSON = */ clientDataJSON,
+                                    /* clientExtensionsJSON = */ null,
+                                    /* signature = */ signature
                                 )
 
                         val authenticationParameters =
                                 AuthenticationParameters(
-                                        serverProperty,
-                                        authenticator,
-                                        listOf(credentialId),
-                                        false, // userVerificationRequired
-                                        true // userPresenceRequired
+                                    /* serverProperty = */ serverProperty,
+                                    /* credentialRecord = */ credentialRecord,
+                                    /* allowCredentials = */ listOf(credentialId),
+                                    /* userVerificationRequired = */ false,
+                                    /* userPresenceRequired = */ true
                                 )
 
                         val authenticationData =
                                 webAuthnManager.verify(
-                                        authenticationRequest,
-                                        authenticationParameters
+                                    /* authenticationRequest = */ authenticationRequest,
+                                    /* authenticationParameters = */ authenticationParameters
                                 )
 
                         // Update sign count
                         CredentialStorage.updateSignCount(
-                                credIdB64,
-                                authenticationData.authenticatorData?.signCount ?: 0
+                            credentialIdB64 = credIdB64,
+                            newSignCount = authenticationData.authenticatorData?.signCount ?: 0
                         )
 
                         println("Authentication successful!")
