@@ -3,22 +3,24 @@ package com.example.passkeyserver.routes
 import com.example.passkeyserver.model.AuthenticationOptionsRequest
 import com.example.passkeyserver.model.AuthenticationVerifyRequest
 import com.example.passkeyserver.webauthn.WebAuthnService
-import io.ktor.http.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.call
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
 
 // These will be set via environment or config
 private val rpId = System.getenv("RP_ID") ?: "localhost"
-private val rpName = "Passkey PRF POC"
+private const val RP_NAME = "Passkey PRF POC"
 private val origin = System.getenv("ORIGIN") ?: "https://localhost:8080"
 private val androidOrigin = System.getenv("ANDROID_ORIGIN")
 
-private val webAuthnService = WebAuthnService(rpId, rpName, origin, androidOrigin)
+private val webAuthnService = WebAuthnService(rpId, RP_NAME, origin, androidOrigin)
 
 fun Route.authenticationRoutes() {
     route("/authenticate") {
-
         /** POST /authenticate/options Generate authentication options (PRF handled by client) */
         post("/options") {
             call.receive<AuthenticationOptionsRequest>() // Still accept request body for future

@@ -1,12 +1,42 @@
+@file:Suppress("FunctionNaming", "MagicNumber")
+
 package com.example.passkeyprfpoc.ui
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,7 +50,10 @@ import com.passkeyvault.platform.PlatformContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel, platformContext: PlatformContext) {
+fun MainScreen(
+    viewModel: MainViewModel,
+    platformContext: PlatformContext,
+) {
     val uiState by viewModel.uiState.collectAsState()
     var serverUrlInput by remember { mutableStateOf("") }
 
@@ -29,26 +62,26 @@ fun MainScreen(viewModel: MainViewModel, platformContext: PlatformContext) {
     }
 
     Scaffold(
-            topBar = {
-                TopAppBar(
-                        title = { Text("Passkey PRF POC") },
-                        colors =
-                                TopAppBarDefaults.topAppBarColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                )
-                )
-            }
+        topBar = {
+            TopAppBar(
+                title = { Text("Passkey PRF POC") },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+            )
+        },
     ) { padding ->
         Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Server Configuration
             ServerConfigCard(
-                    serverUrl = serverUrlInput,
-                    isConfigured = uiState.isServerConfigured,
-                    onUrlChange = { serverUrlInput = it },
-                    onSave = { viewModel.setServerUrl(serverUrlInput) }
+                serverUrl = serverUrlInput,
+                isConfigured = uiState.isServerConfigured,
+                onUrlChange = { serverUrlInput = it },
+                onSave = { viewModel.setServerUrl(serverUrlInput) },
             )
 
             // Status Card
@@ -56,11 +89,11 @@ fun MainScreen(viewModel: MainViewModel, platformContext: PlatformContext) {
 
             // Action Buttons
             ActionButtons(
-                    uiState = uiState,
-                    onCreatePasskey = { viewModel.createPasskey(platformContext) },
-                    onEncrypt = { viewModel.encryptData(platformContext) },
-                    onDecrypt = { viewModel.decryptData(platformContext) },
-                    onReset = { viewModel.resetAll() }
+                uiState = uiState,
+                onCreatePasskey = { viewModel.createPasskey(platformContext) },
+                onEncrypt = { viewModel.encryptData(platformContext) },
+                onDecrypt = { viewModel.decryptData(platformContext) },
+                onReset = { viewModel.resetAll() },
             )
 
             // Results Card
@@ -76,37 +109,40 @@ fun MainScreen(viewModel: MainViewModel, platformContext: PlatformContext) {
 
 @Composable
 fun ServerConfigCard(
-        serverUrl: String,
-        isConfigured: Boolean,
-        onUrlChange: (String) -> Unit,
-        onSave: () -> Unit
+    serverUrl: String,
+    isConfigured: Boolean,
+    onUrlChange: (String) -> Unit,
+    onSave: () -> Unit,
 ) {
     Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor =
-                                    if (isConfigured) MaterialTheme.colorScheme.secondaryContainer
-                                    else MaterialTheme.colorScheme.errorContainer
-                    )
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isConfigured) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.errorContainer
+                    },
+            ),
     ) {
         Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                    text = "Server Configuration",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                text = "Server Configuration",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
 
             OutlinedTextField(
-                    value = serverUrl,
-                    onValueChange = onUrlChange,
-                    label = { Text("Server URL (ngrok)") },
-                    placeholder = { Text("https://abc123.ngrok.io") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                value = serverUrl,
+                onValueChange = onUrlChange,
+                label = { Text("Server URL (ngrok)") },
+                placeholder = { Text("https://abc123.ngrok.io") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
             )
 
             Button(onClick = onSave, modifier = Modifier.align(Alignment.End)) { Text("Save") }
@@ -118,18 +154,18 @@ fun ServerConfigCard(
 fun StatusCard(uiState: UiState) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                    text = "Status",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                text = "Status",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
 
             Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 StatusIndicator(label = "Server", isActive = uiState.isServerConfigured)
                 StatusIndicator(label = "Passkey", isActive = uiState.hasPasskey)
@@ -138,16 +174,16 @@ fun StatusCard(uiState: UiState) {
 
             if (uiState.lastPrfHash != null) {
                 Text(
-                        text = "PRF Hash: ${uiState.lastPrfHash}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace
+                    text = "PRF Hash: ${uiState.lastPrfHash}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
                 )
             }
             if (uiState.lastKeyHash != null) {
                 Text(
-                        text = "Key Hash: ${uiState.lastKeyHash}",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace
+                    text = "Key Hash: ${uiState.lastKeyHash}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
                 )
             }
         }
@@ -155,20 +191,27 @@ fun StatusCard(uiState: UiState) {
 }
 
 @Composable
-fun StatusIndicator(label: String, isActive: Boolean) {
+fun StatusIndicator(
+    label: String,
+    isActive: Boolean,
+) {
     Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(
-                modifier =
-                        Modifier.size(12.dp)
-                                .background(
-                                        color =
-                                                if (isActive) Color(0xFF4CAF50)
-                                                else Color(0xFFBDBDBD),
-                                        shape = RoundedCornerShape(6.dp)
-                                )
+            modifier =
+                Modifier
+                    .size(12.dp)
+                    .background(
+                        color =
+                            if (isActive) {
+                                Color(0xFF4CAF50)
+                            } else {
+                                Color(0xFFBDBDBD)
+                            },
+                        shape = RoundedCornerShape(6.dp),
+                    ),
         )
         Text(text = label, style = MaterialTheme.typography.bodySmall)
     }
@@ -176,45 +219,45 @@ fun StatusIndicator(label: String, isActive: Boolean) {
 
 @Composable
 fun ActionButtons(
-        uiState: UiState,
-        onCreatePasskey: () -> Unit,
-        onEncrypt: () -> Unit,
-        onDecrypt: () -> Unit,
-        onReset: () -> Unit
+    uiState: UiState,
+    onCreatePasskey: () -> Unit,
+    onEncrypt: () -> Unit,
+    onDecrypt: () -> Unit,
+    onReset: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
-                    onClick = onCreatePasskey,
-                    enabled =
-                            uiState.isServerConfigured && !uiState.isLoading && !uiState.hasPasskey,
-                    modifier = Modifier.weight(1f)
+                onClick = onCreatePasskey,
+                enabled =
+                    uiState.isServerConfigured && !uiState.isLoading && !uiState.hasPasskey,
+                modifier = Modifier.weight(1f),
             ) { Text("Create Passkey") }
 
             Button(
-                    onClick = onEncrypt,
-                    enabled = uiState.hasPasskey && !uiState.isLoading,
-                    modifier = Modifier.weight(1f)
+                onClick = onEncrypt,
+                enabled = uiState.hasPasskey && !uiState.isLoading,
+                modifier = Modifier.weight(1f),
             ) { Text("Encrypt") }
         }
 
         Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
-                    onClick = onDecrypt,
-                    enabled = uiState.hasEncryptedData && !uiState.isLoading,
-                    modifier = Modifier.weight(1f)
+                onClick = onDecrypt,
+                enabled = uiState.hasEncryptedData && !uiState.isLoading,
+                modifier = Modifier.weight(1f),
             ) { Text("Decrypt") }
 
             OutlinedButton(
-                    onClick = onReset,
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier.weight(1f)
+                onClick = onReset,
+                enabled = !uiState.isLoading,
+                modifier = Modifier.weight(1f),
             ) { Text("Reset All") }
         }
 
@@ -227,28 +270,28 @@ fun ActionButtons(
 @Composable
 fun ResultsCard(uiState: UiState) {
     Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                    )
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            ),
     ) {
         Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                    text = "Results",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                text = "Results",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
 
             uiState.encryptedDataB64?.let { encrypted ->
                 Text(text = "Encrypted:", style = MaterialTheme.typography.labelMedium)
                 Text(
-                        text = if (encrypted.length > 60) "${encrypted.take(60)}..." else encrypted,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace
+                    text = if (encrypted.length > 60) "${encrypted.take(60)}..." else encrypted,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
                 )
             }
 
@@ -256,9 +299,9 @@ fun ResultsCard(uiState: UiState) {
                 HorizontalDivider()
                 Text(text = "Decrypted:", style = MaterialTheme.typography.labelMedium)
                 Text(
-                        text = decrypted,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
+                    text = decrypted,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -266,7 +309,10 @@ fun ResultsCard(uiState: UiState) {
 }
 
 @Composable
-fun LogsCard(logs: List<String>, modifier: Modifier = Modifier) {
+fun LogsCard(
+    logs: List<String>,
+    modifier: Modifier = Modifier,
+) {
     val listState = rememberLazyListState()
 
     // Auto-scroll to bottom when new logs are added
@@ -277,40 +323,40 @@ fun LogsCard(logs: List<String>, modifier: Modifier = Modifier) {
     }
 
     Card(
-            modifier = modifier.fillMaxWidth(),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+        modifier = modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                    text = "Debug Log",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                text = "Debug Log",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 items(logs) { log ->
                     val color =
-                            when {
-                                log.contains("✅") -> Color(0xFF4CAF50)
-                                log.contains("❌") -> Color(0xFFE53935)
-                                log.contains("⚠️") -> Color(0xFFFF9800)
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                        when {
+                            log.contains("✅") -> Color(0xFF4CAF50)
+                            log.contains("❌") -> Color(0xFFE53935)
+                            log.contains("⚠️") -> Color(0xFFFF9800)
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
                     Text(
-                            text = log,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            color = color
+                        text = log,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        color = color,
                     )
                 }
             }

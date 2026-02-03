@@ -6,26 +6,29 @@ import com.passkeyvault.platform.PlatformContext
 /** Handles passkey authentication with PRF extension. */
 interface PrfAuthenticator {
     suspend fun authenticate(
-            platformContext: PlatformContext,
-            challenge: String,
-            rpId: String,
-            allowCredentials: List<CredentialDescriptor>,
-            prfSalt: ByteArray
+        platformContext: PlatformContext,
+        challenge: String,
+        rpId: String,
+        allowCredentials: List<CredentialDescriptor>,
+        prfSalt: ByteArray,
     ): PrfAuthResult
 }
 
 /** Result of PRF authentication. */
-data class PrfAuthResult(val responseJson: String, val prfOutput: ByteArray?) {
+data class PrfAuthResult(
+    val responseJson: String,
+    val prfOutput: ByteArray?,
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is PrfAuthResult) return false
         val prfOutputMatches =
-                when {
-                    prfOutput == null && other.prfOutput == null -> true
-                    prfOutput != null && other.prfOutput != null ->
-                            prfOutput.contentEquals(other.prfOutput)
-                    else -> false
-                }
+            when {
+                prfOutput == null && other.prfOutput == null -> true
+                prfOutput != null && other.prfOutput != null ->
+                    prfOutput.contentEquals(other.prfOutput)
+                else -> false
+            }
         return responseJson == other.responseJson && prfOutputMatches
     }
 

@@ -1,0 +1,4 @@
+--indent 4
+--linebreaks lf
+--swiftversion 5.9
+--exclude iosApp.xcodeproj,build,DerivedData

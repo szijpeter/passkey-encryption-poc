@@ -9,15 +9,22 @@ import androidx.credentials.PublicKeyCredential
 import com.example.passkeyprfpoc.api.AuthenticationOptionsResponse
 import com.example.passkeyprfpoc.api.RegistrationOptionsResponse
 import com.passkeyvault.platform.PlatformContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.util.Base64
-import kotlinx.serialization.json.*
 
 /**
  * Manages passkey operations using Android Credential Manager. Handles creation and authentication
  * with PRF extension support.
  */
 actual class PasskeyManager {
-
     companion object {
         private const val TAG = "PasskeyManager"
     }
@@ -28,10 +35,10 @@ actual class PasskeyManager {
      * @return The credential response JSON string
      */
     actual suspend fun createPasskey(
-            platformContext: PlatformContext,
-            options: RegistrationOptionsResponse
-    ): Result<String> {
-        return try {
+        platformContext: PlatformContext,
+        options: RegistrationOptionsResponse,
+    ): Result<String> =
+        runCatching {
             val credentialManager = CredentialManager.create(platformContext)
 
             // Build the WebAuthn creation options JSON
@@ -39,27 +46,28 @@ actual class PasskeyManager {
             Log.d(TAG, "Registration request JSON: $requestJson")
 
             val request =
-                    CreatePublicKeyCredentialRequest(
-                            requestJson = requestJson,
-                            preferImmediatelyAvailableCredentials = false
-                    )
+                CreatePublicKeyCredentialRequest(
+                    requestJson = requestJson,
+                    preferImmediatelyAvailableCredentials = false,
+                )
 
             val result = credentialManager.createCredential(platformContext, request)
             val credential =
+                checkNotNull(
                     result.data.getString(
-                            "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON"
-                    )
-                            ?: throw IllegalStateException("No credential response found")
+                        "androidx.credentials.BUNDLE_KEY_REGISTRATION_RESPONSE_JSON",
+                    ),
+                ) {
+                    "No credential response found"
+                }
 
             Log.d(TAG, "Credential created successfully")
             Log.d(TAG, "Response: $credential")
 
-            Result.success(credential)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to create passkey", e)
-            Result.failure(e)
+            credential
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to create passkey", error)
         }
-    }
 
     /**
      * Authenticate with a passkey and get PRF output.
@@ -68,11 +76,11 @@ actual class PasskeyManager {
      * @return Pair of (credential response JSON, PRF output bytes or null)
      */
     actual suspend fun authenticateWithPrf(
-            platformContext: PlatformContext,
-            options: AuthenticationOptionsResponse,
-            prfSalt: ByteArray
-    ): Result<PasskeyAuthResult> {
-        return try {
+        platformContext: PlatformContext,
+        options: AuthenticationOptionsResponse,
+        prfSalt: ByteArray,
+    ): Result<PasskeyAuthResult> =
+        runCatching {
             val credentialManager = CredentialManager.create(platformContext)
 
             // Convert salt to base64url
@@ -88,8 +96,8 @@ actual class PasskeyManager {
 
             val result = credentialManager.getCredential(platformContext, request)
             val credential =
-                    result.credential as? PublicKeyCredential
-                            ?: throw IllegalStateException("Expected PublicKeyCredential")
+                result.credential as? PublicKeyCredential
+                    ?: error("Expected PublicKeyCredential")
 
             val responseJson = credential.authenticationResponseJson
             Log.d(TAG, "Authentication response: $responseJson")
@@ -104,81 +112,75 @@ actual class PasskeyManager {
                 Log.w(TAG, "No PRF output in response - extension may not be supported")
             }
 
-            Result.success(PasskeyAuthResult(responseJson, prfOutput))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to authenticate", e)
-            Result.failure(e)
+            PasskeyAuthResult(responseJson, prfOutput)
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to authenticate", error)
         }
-    }
 
     /** Build registration JSON from server options. */
-    private fun buildRegistrationJson(options: RegistrationOptionsResponse): String {
-        return buildJsonObject {
-                    put("challenge", options.challenge)
-                    putJsonObject("rp") {
-                        put("id", options.rp.id)
-                        put("name", options.rp.name)
+    private fun buildRegistrationJson(options: RegistrationOptionsResponse): String =
+        buildJsonObject {
+            put("challenge", options.challenge)
+            putJsonObject("rp") {
+                put("id", options.rp.id)
+                put("name", options.rp.name)
+            }
+            putJsonObject("user") {
+                put("id", options.user.id)
+                put("name", options.user.name)
+                put("displayName", options.user.displayName)
+            }
+            putJsonArray("pubKeyCredParams") {
+                options.pubKeyCredParams.forEach { param ->
+                    addJsonObject {
+                        put("type", param.type)
+                        put("alg", param.alg)
                     }
-                    putJsonObject("user") {
-                        put("id", options.user.id)
-                        put("name", options.user.name)
-                        put("displayName", options.user.displayName)
-                    }
-                    putJsonArray("pubKeyCredParams") {
-                        options.pubKeyCredParams.forEach { param ->
-                            addJsonObject {
-                                put("type", param.type)
-                                put("alg", param.alg)
-                            }
-                        }
-                    }
-                    put("timeout", options.timeout)
-                    put("attestation", options.attestation)
-                    putJsonObject("authenticatorSelection") {
-                        options.authenticatorSelection.authenticatorAttachment?.let {
-                            put("authenticatorAttachment", it)
-                        }
-                        put("residentKey", options.authenticatorSelection.residentKey)
-                        put("userVerification", options.authenticatorSelection.userVerification)
-                    }
-                    // Request PRF extension support
-                    putJsonObject("extensions") { putJsonObject("prf") {} }
                 }
-                .toString()
-    }
+            }
+            put("timeout", options.timeout)
+            put("attestation", options.attestation)
+            putJsonObject("authenticatorSelection") {
+                options.authenticatorSelection.authenticatorAttachment?.let {
+                    put("authenticatorAttachment", it)
+                }
+                put("residentKey", options.authenticatorSelection.residentKey)
+                put("userVerification", options.authenticatorSelection.userVerification)
+            }
+            // Request PRF extension support
+            putJsonObject("extensions") { putJsonObject("prf") {} }
+        }.toString()
 
     /** Build authentication JSON from server options with PRF evaluation. */
     private fun buildAuthenticationJson(
-            options: AuthenticationOptionsResponse,
-            prfSaltB64: String
-    ): String {
-        return buildJsonObject {
-                    put("challenge", options.challenge)
-                    put("rpId", options.rpId)
-                    put("timeout", options.timeout)
-                    put("userVerification", options.userVerification)
-                    putJsonArray("allowCredentials") {
-                        options.allowCredentials.forEach { cred ->
-                            addJsonObject {
-                                put("type", cred.type)
-                                put("id", cred.id)
-                                cred.transports?.let { transports ->
-                                    putJsonArray("transports") { transports.forEach { add(it) } }
-                                }
-                            }
+        options: AuthenticationOptionsResponse,
+        prfSaltB64: String,
+    ): String =
+        buildJsonObject {
+            put("challenge", options.challenge)
+            put("rpId", options.rpId)
+            put("timeout", options.timeout)
+            put("userVerification", options.userVerification)
+            putJsonArray("allowCredentials") {
+                options.allowCredentials.forEach { cred ->
+                    addJsonObject {
+                        put("type", cred.type)
+                        put("id", cred.id)
+                        cred.transports?.let { transports ->
+                            putJsonArray("transports") { transports.forEach { add(it) } }
                         }
                     }
-                    // Request PRF evaluation with the provided salt
-                    putJsonObject("extensions") {
-                        putJsonObject("prf") { putJsonObject("eval") { put("first", prfSaltB64) } }
-                    }
                 }
-                .toString()
-    }
+            }
+            // Request PRF evaluation with the provided salt
+            putJsonObject("extensions") {
+                putJsonObject("prf") { putJsonObject("eval") { put("first", prfSaltB64) } }
+            }
+        }.toString()
 
     /** Extract PRF output from authentication response. */
-    private fun extractPrfOutput(responseJson: String): ByteArray? {
-        return try {
+    private fun extractPrfOutput(responseJson: String): ByteArray? =
+        runCatching {
             val json = Json.parseToJsonElement(responseJson).jsonObject
             val clientExtensionResults = json["clientExtensionResults"]?.jsonObject
             val prf = clientExtensionResults?.get("prf")?.jsonObject
@@ -186,9 +188,7 @@ actual class PasskeyManager {
             val firstB64 = results?.get("first")?.jsonPrimitive?.content
 
             firstB64?.let { Base64.getUrlDecoder().decode(it) }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract PRF output", e)
-            null
-        }
-    }
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to extract PRF output", error)
+        }.getOrNull()
 }

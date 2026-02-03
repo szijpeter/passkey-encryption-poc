@@ -1,9 +1,11 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.passkeyvault.auth
 
 import com.passkeyvault.model.CredentialDescriptor
 import com.passkeyvault.platform.PlatformContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import com.passkeyvault.util.decodeBase64Url
+import com.passkeyvault.util.encodeBase64Url
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -17,8 +19,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
-import com.passkeyvault.util.decodeBase64Url
-import com.passkeyvault.util.encodeBase64Url
 import platform.AuthenticationServices.ASAuthorization
 import platform.AuthenticationServices.ASAuthorizationController
 import platform.AuthenticationServices.ASAuthorizationControllerDelegateProtocol
@@ -31,22 +31,26 @@ import platform.AuthenticationServices.ASAuthorizationPublicKeyCredentialPRFAsse
 import platform.AuthenticationServices.ASAuthorizationPublicKeyCredentialUserVerificationPreferenceRequired
 import platform.AuthenticationServices.ASAuthorizationRequest
 import platform.Foundation.NSClassFromString
+import platform.Foundation.NSData
 import platform.Foundation.NSError
 import platform.Foundation.NSProcessInfo
-import platform.Foundation.NSData
 import platform.Foundation.dataWithBytes
-import platform.darwin.NSObject
 import platform.UIKit.UIApplication
-import platform.UIKit.UIWindow
 import platform.UIKit.UIViewController
+import platform.UIKit.UIWindow
+import platform.darwin.NSObject
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+private const val MIN_PRF_IOS_VERSION = 18
 
 internal class IosPrfAuthenticator : PrfAuthenticator {
     override suspend fun authenticate(
-            platformContext: PlatformContext,
-            challenge: String,
-            rpId: String,
-            allowCredentials: List<CredentialDescriptor>,
-            prfSalt: ByteArray
+        platformContext: PlatformContext,
+        challenge: String,
+        rpId: String,
+        allowCredentials: List<CredentialDescriptor>,
+        prfSalt: ByteArray,
     ): PrfAuthResult {
         if (!isPrfSupported()) {
             throw UnsupportedOperationException("PRF requires iOS 18 or newer.")
@@ -54,32 +58,32 @@ internal class IosPrfAuthenticator : PrfAuthenticator {
 
         val provider = ASAuthorizationPlatformPublicKeyCredentialProvider(rpId)
         val request =
-                provider.createCredentialAssertionRequestWithChallenge(
-                        decodeBase64Url(challenge).toNSData()
-                )
+            provider.createCredentialAssertionRequestWithChallenge(
+                decodeBase64Url(challenge).toNSData(),
+            )
 
         if (allowCredentials.isNotEmpty()) {
             val descriptors =
-                    allowCredentials.map { cred ->
-                        val credentialId = decodeBase64Url(cred.id).toNSData()
-                        ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialId)
-                    }
+                allowCredentials.map { cred ->
+                    val credentialId = decodeBase64Url(cred.id).toNSData()
+                    ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialId)
+                }
             request.allowedCredentials = descriptors
         }
 
         request.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreferenceRequired
 
         val prfInputValues =
-                ASAuthorizationPublicKeyCredentialPRFAssertionInputValues(
-                        prfSalt.toNSData(),
-                        null
-                )
+            ASAuthorizationPublicKeyCredentialPRFAssertionInputValues(
+                prfSalt.toNSData(),
+                null,
+            )
         request.prf = ASAuthorizationPublicKeyCredentialPRFAssertionInput(prfInputValues, null)
 
         val authorization = performAuthorization(platformContext, request)
         val assertion =
-                authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion
-                        ?: error("Unexpected credential type returned from assertion")
+            authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialAssertion
+                ?: error("Unexpected credential type returned from assertion")
 
         val responseJson = buildAssertionResponseJson(assertion)
         val prfOutput = assertion.prf()?.first?.toByteArray()
@@ -91,8 +95,8 @@ internal class IosPrfAuthenticator : PrfAuthenticator {
 actual fun createPlatformPrfAuthenticator(): PrfAuthenticator = IosPrfAuthenticator()
 
 private suspend fun performAuthorization(
-        platformContext: UIViewController,
-        request: ASAuthorizationRequest
+    platformContext: UIViewController,
+    request: ASAuthorizationRequest,
 ): ASAuthorization {
     val anchor = resolvePresentationAnchor(platformContext)
 
@@ -109,20 +113,18 @@ private suspend fun performAuthorization(
 }
 
 private class AuthorizationHandler(
-        private val anchor: UIWindow,
-        private val continuation: CancellableContinuation<ASAuthorization>
-) : NSObject(), ASAuthorizationControllerDelegateProtocol,
-        ASAuthorizationControllerPresentationContextProvidingProtocol {
-
+    private val anchor: UIWindow,
+    private val continuation: CancellableContinuation<ASAuthorization>,
+) : NSObject(),
+    ASAuthorizationControllerDelegateProtocol,
+    ASAuthorizationControllerPresentationContextProvidingProtocol {
     var controller: ASAuthorizationController? = null
 
-    override fun presentationAnchorForAuthorizationController(
-            controller: ASAuthorizationController
-    ): UIWindow? = anchor
+    override fun presentationAnchorForAuthorizationController(controller: ASAuthorizationController): UIWindow? = anchor
 
     override fun authorizationController(
-            controller: ASAuthorizationController,
-            didCompleteWithAuthorization: ASAuthorization
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization: ASAuthorization,
     ) {
         if (continuation.isActive) {
             continuation.resume(didCompleteWithAuthorization)
@@ -130,8 +132,8 @@ private class AuthorizationHandler(
     }
 
     override fun authorizationController(
-            controller: ASAuthorizationController,
-            didCompleteWithError: NSError
+        controller: ASAuthorizationController,
+        didCompleteWithError: NSError,
     ) {
         if (continuation.isActive) {
             continuation.resumeWithException(AuthorizationException(didCompleteWithError))
@@ -139,83 +141,82 @@ private class AuthorizationHandler(
     }
 }
 
-private class AuthorizationException(error: NSError) : Exception(error.localizedDescription)
+private class AuthorizationException(
+    error: NSError,
+) : Exception(error.localizedDescription)
 
 private fun resolvePresentationAnchor(platformContext: UIViewController): UIWindow {
     val keyWindow =
-            UIApplication.sharedApplication.windows
-                    .filterIsInstance<UIWindow>()
-                    .firstOrNull { it.isKeyWindow() }
+        UIApplication.sharedApplication.windows
+            .filterIsInstance<UIWindow>()
+            .firstOrNull { it.isKeyWindow() }
     return platformContext.view.window
-            ?: keyWindow
-            ?: error("Unable to find a presentation window for passkey authorization")
+        ?: keyWindow
+        ?: error("Unable to find a presentation window for passkey authorization")
 }
 
 @OptIn(BetaInteropApi::class, ExperimentalForeignApi::class)
 private fun isPrfSupported(): Boolean {
     val version = NSProcessInfo.processInfo.operatingSystemVersion.useContents { majorVersion }
-    if (version < 18) return false
+    if (version < MIN_PRF_IOS_VERSION) return false
     return NSClassFromString("ASAuthorizationPublicKeyCredentialPRFAssertionInput") != null
 }
 
-private fun buildAssertionResponseJson(
-        assertion: ASAuthorizationPlatformPublicKeyCredentialAssertion
-): String {
+private fun buildAssertionResponseJson(assertion: ASAuthorizationPlatformPublicKeyCredentialAssertion): String {
     val credentialId = assertion.credentialID().toByteArray()
     val clientData = assertion.rawClientDataJSON().toByteArray()
     val authenticatorData =
-            requireNotNull(assertion.rawAuthenticatorData()) {
-                "Missing authenticator data from assertion"
-            }
-                    .toByteArray()
+        requireNotNull(assertion.rawAuthenticatorData()) {
+            "Missing authenticator data from assertion"
+        }.toByteArray()
     val signature =
-            requireNotNull(assertion.signature()) { "Missing signature from assertion" }
-                    .toByteArray()
+        requireNotNull(assertion.signature()) { "Missing signature from assertion" }
+            .toByteArray()
 
     val responseJson =
-            buildJsonObject {
-                put("clientDataJSON", encodeBase64Url(clientData))
-                put("authenticatorData", encodeBase64Url(authenticatorData))
-                put("signature", encodeBase64Url(signature))
-                assertion.userID()?.let { put("userHandle", encodeBase64Url(it.toByteArray())) }
-            }
+        buildJsonObject {
+            put("clientDataJSON", encodeBase64Url(clientData))
+            put("authenticatorData", encodeBase64Url(authenticatorData))
+            put("signature", encodeBase64Url(signature))
+            assertion.userID()?.let { put("userHandle", encodeBase64Url(it.toByteArray())) }
+        }
 
     val prfOutput = assertion.prf()
     val extensionResults =
-            prfOutput?.let { output ->
-                buildJsonObject {
-                    putJsonObject("prf") {
-                        putJsonObject("results") {
-                            put("first", encodeBase64Url(output.first.toByteArray()))
-                            output.second?.let { put("second", encodeBase64Url(it.toByteArray())) }
-                        }
+        prfOutput?.let { output ->
+            buildJsonObject {
+                putJsonObject("prf") {
+                    putJsonObject("results") {
+                        put("first", encodeBase64Url(output.first.toByteArray()))
+                        output.second?.let { put("second", encodeBase64Url(it.toByteArray())) }
                     }
                 }
             }
+        }
 
     return buildJsonObject {
-                val idB64 = encodeBase64Url(credentialId)
-                put("id", idB64)
-                put("rawId", idB64)
-                put("type", "public-key")
-                put("response", responseJson)
-                extensionResults?.let { put("clientExtensionResults", it) }
-            }
-            .toString()
+        val idB64 = encodeBase64Url(credentialId)
+        put("id", idB64)
+        put("rawId", idB64)
+        put("type", "public-key")
+        put("response", responseJson)
+        extensionResults?.let { put("clientExtensionResults", it) }
+    }.toString()
 }
-
 
 @OptIn(ExperimentalForeignApi::class)
-private fun ByteArray.toNSData(): NSData {
-    return usePinned { pinned ->
+private fun ByteArray.toNSData(): NSData =
+    usePinned { pinned ->
         NSData.dataWithBytes(pinned.addressOf(0), size.toULong())
     }
-}
 
 @OptIn(ExperimentalForeignApi::class)
 private fun NSData.toByteArray(): ByteArray {
     val size = length.toInt()
-    if (size == 0) return ByteArray(0)
-    val pointer = bytes?.reinterpret<ByteVar>() ?: return ByteArray(0)
-    return pointer.readBytes(size)
+    val pointer = if (size == 0) null else bytes?.reinterpret<ByteVar>()
+    return if (size == 0 || pointer == null) {
+        ByteArray(0)
+    } else {
+        pointer.readBytes(size)
+    }
 }

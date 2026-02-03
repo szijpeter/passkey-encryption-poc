@@ -15,6 +15,11 @@ kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+
+        lint {
+            abortOnError = true
+            checkDependencies = true
+        }
     }
 
     iosArm64()

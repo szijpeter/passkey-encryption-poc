@@ -89,6 +89,7 @@
 			buildConfigurationList = A1B2C3D4E5F6A1B2C3D4E615 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
 				A1B2C3D4E5F6A1B2C3D4E602 /* Build ComposeApp framework */,
+				A1B2C3D4E5F6A1B2C3D4E620 /* Lint Swift */,
 				A1B2C3D4E5F6A1B2C3D4E5F8 /* Sources */,
 				A1B2C3D4E5F6A1B2C3D4E5F9 /* Frameworks */,
 				A1B2C3D4E5F6A1B2C3D4E601 /* CopyFiles */,
@@ -158,6 +159,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "set -eo pipefail\n\nPROJECT_ROOT=\"$SRCROOT/..\"\n\nif [[ \"$PLATFORM_NAME\" == \"iphonesimulator\" ]]; then\n  KONAN_TARGET=\"iosSimulatorArm64\"\nelse\n  KONAN_TARGET=\"iosArm64\"\nfi\n\nif [[ \"$CONFIGURATION\" == \"Debug\" ]]; then\n  CONFIGURATION_TASK=\"Debug\"\n  CONFIGURATION_FOLDER=\"debug\"\nelse\n  CONFIGURATION_TASK=\"Release\"\n  CONFIGURATION_FOLDER=\"release\"\nfi\n\n\"$PROJECT_ROOT/gradlew\" -p \"$PROJECT_ROOT\" :app:link${CONFIGURATION_TASK}Framework${KONAN_TARGET}\n\nFRAMEWORK_DIR=\"$PROJECT_ROOT/app/build/bin/${KONAN_TARGET}/${CONFIGURATION_FOLDER}Framework\"\nrsync -a --delete \"$FRAMEWORK_DIR/ComposeApp.framework\" \"$BUILT_PRODUCTS_DIR\"\n";
+		};
+		A1B2C3D4E5F6A1B2C3D4E620 /* Lint Swift */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Lint Swift";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eo pipefail\n\nPROJECT_ROOT=\"$SRCROOT/..\"\n\"$PROJECT_ROOT/scripts/lint-ios.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

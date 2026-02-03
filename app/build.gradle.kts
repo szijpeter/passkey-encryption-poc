@@ -36,7 +36,7 @@ val generateIosServerConfig by tasks.registering {
             internal object IosServerConfig {
                 const val DEFAULT_SERVER_URL: String = "$sanitizedServerUrl"
             }
-            """.trimIndent()
+            """.trimIndent() + "\n",
         )
     }
 }
@@ -57,7 +57,7 @@ val generateAndroidServerConfig by tasks.registering {
             internal object AndroidServerConfig {
                 const val DEFAULT_SERVER_URL: String = "$sanitizedServerUrl"
             }
-            """.trimIndent()
+            """.trimIndent() + "\n",
         )
     }
 }
@@ -73,13 +73,18 @@ kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
+
+        lint {
+            abortOnError = true
+            checkDependencies = true
+        }
     }
 
     val iosTargets =
-            listOf(
-                    iosArm64(),
-                    iosSimulatorArm64()
-            )
+        listOf(
+            iosArm64(),
+            iosSimulatorArm64(),
+        )
     iosTargets.forEach { target ->
         target.binaries.framework {
             baseName = "ComposeApp"
@@ -122,12 +127,33 @@ kotlin {
     }
 }
 
-tasks.matching {
-    it.name.startsWith("compileIos") || it.name.startsWith("compileKotlinIos")
-}.configureEach {
-    dependsOn(generateIosServerConfig)
-}
+tasks
+    .matching {
+        it.name.startsWith("compileIos") || it.name.startsWith("compileKotlinIos")
+    }.configureEach {
+        dependsOn(generateIosServerConfig)
+    }
 
 tasks.matching { it.name.startsWith("compileAndroid") }.configureEach {
     dependsOn(generateAndroidServerConfig)
 }
+
+tasks
+    .matching {
+        it.name == "runKtlintCheckOverAndroidMainSourceSet" ||
+            it.name == "ktlintAndroidMainSourceSetCheck" ||
+            it.name == "runKtlintFormatOverAndroidMainSourceSet" ||
+            it.name == "ktlintAndroidMainSourceSetFormat"
+    }.configureEach {
+        dependsOn(generateAndroidServerConfig)
+    }
+
+tasks
+    .matching {
+        it.name == "runKtlintCheckOverIosMainSourceSet" ||
+            it.name == "ktlintIosMainSourceSetCheck" ||
+            it.name == "runKtlintFormatOverIosMainSourceSet" ||
+            it.name == "ktlintIosMainSourceSetFormat"
+    }.configureEach {
+        dependsOn(generateIosServerConfig)
+    }

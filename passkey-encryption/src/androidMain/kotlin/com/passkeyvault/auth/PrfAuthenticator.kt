@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName")
+
 package com.passkeyvault.auth
 
 import android.util.Log
@@ -7,14 +9,22 @@ import androidx.credentials.GetPublicKeyCredentialOption
 import androidx.credentials.PublicKeyCredential
 import com.passkeyvault.model.CredentialDescriptor
 import com.passkeyvault.platform.PlatformContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import java.util.Base64
-import kotlinx.serialization.json.*
 
 /** Handles passkey authentication with PRF extension on Android. */
 internal class AndroidPrfAuthenticator : PrfAuthenticator {
-
     companion object {
         private const val TAG = "PasskeyVault"
+        private const val DEFAULT_TIMEOUT_MS = 60_000
     }
 
     /**
@@ -28,11 +38,11 @@ internal class AndroidPrfAuthenticator : PrfAuthenticator {
      * @return PRF output bytes (32 bytes) or null if PRF not supported
      */
     override suspend fun authenticate(
-            platformContext: PlatformContext,
-            challenge: String,
-            rpId: String,
-            allowCredentials: List<CredentialDescriptor>,
-            prfSalt: ByteArray
+        platformContext: PlatformContext,
+        challenge: String,
+        rpId: String,
+        allowCredentials: List<CredentialDescriptor>,
+        prfSalt: ByteArray,
     ): PrfAuthResult {
         val credentialManager = CredentialManager.create(platformContext)
 
@@ -48,8 +58,8 @@ internal class AndroidPrfAuthenticator : PrfAuthenticator {
 
         val result = credentialManager.getCredential(platformContext, request)
         val credential =
-                result.credential as? PublicKeyCredential
-                        ?: throw IllegalStateException("Expected PublicKeyCredential")
+            result.credential as? PublicKeyCredential
+                ?: error("Expected PublicKeyCredential")
 
         val responseJson = credential.authenticationResponseJson
         Log.d(TAG, "Authentication completed")
@@ -67,37 +77,35 @@ internal class AndroidPrfAuthenticator : PrfAuthenticator {
     }
 
     private fun buildAuthenticationJson(
-            challenge: String,
-            rpId: String,
-            allowCredentials: List<CredentialDescriptor>,
-            prfSaltB64: String
-    ): String {
-        return buildJsonObject {
-                    put("challenge", challenge)
-                    put("rpId", rpId)
-                    put("timeout", 60000)
-                    put("userVerification", "required")
-                    putJsonArray("allowCredentials") {
-                        allowCredentials.forEach { cred ->
-                            addJsonObject {
-                                put("type", "public-key")
-                                put("id", cred.id)
-                                cred.transports?.let { transports ->
-                                    putJsonArray("transports") { transports.forEach { add(it) } }
-                                }
-                            }
+        challenge: String,
+        rpId: String,
+        allowCredentials: List<CredentialDescriptor>,
+        prfSaltB64: String,
+    ): String =
+        buildJsonObject {
+            put("challenge", challenge)
+            put("rpId", rpId)
+            put("timeout", DEFAULT_TIMEOUT_MS)
+            put("userVerification", "required")
+            putJsonArray("allowCredentials") {
+                allowCredentials.forEach { cred ->
+                    addJsonObject {
+                        put("type", "public-key")
+                        put("id", cred.id)
+                        cred.transports?.let { transports ->
+                            putJsonArray("transports") { transports.forEach { add(it) } }
                         }
                     }
-                    // Request PRF evaluation with the provided salt
-                    putJsonObject("extensions") {
-                        putJsonObject("prf") { putJsonObject("eval") { put("first", prfSaltB64) } }
-                    }
                 }
-                .toString()
-    }
+            }
+            // Request PRF evaluation with the provided salt
+            putJsonObject("extensions") {
+                putJsonObject("prf") { putJsonObject("eval") { put("first", prfSaltB64) } }
+            }
+        }.toString()
 
-    private fun extractPrfOutput(responseJson: String): ByteArray? {
-        return try {
+    private fun extractPrfOutput(responseJson: String): ByteArray? =
+        runCatching {
             val json = Json.parseToJsonElement(responseJson).jsonObject
             val clientExtensionResults = json["clientExtensionResults"]?.jsonObject
             val prf = clientExtensionResults?.get("prf")?.jsonObject
@@ -105,11 +113,9 @@ internal class AndroidPrfAuthenticator : PrfAuthenticator {
             val firstB64 = results?.get("first")?.jsonPrimitive?.content
 
             firstB64?.let { Base64.getUrlDecoder().decode(it) }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract PRF output", e)
-            null
-        }
-    }
+        }.onFailure { error ->
+            Log.e(TAG, "Failed to extract PRF output", error)
+        }.getOrNull()
 }
 
 actual fun createPlatformPrfAuthenticator(): PrfAuthenticator = AndroidPrfAuthenticator()

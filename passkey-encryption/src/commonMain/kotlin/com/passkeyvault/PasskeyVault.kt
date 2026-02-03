@@ -44,10 +44,9 @@ import com.passkeyvault.storage.SaltStore
  * ```
  */
 class PasskeyVault(
-        private val saltStore: SaltStore = SaltStore(),
-        private val prfAuthenticator: PrfAuthenticator = createPlatformPrfAuthenticator()
+    private val saltStore: SaltStore = SaltStore(),
+    private val prfAuthenticator: PrfAuthenticator = createPlatformPrfAuthenticator(),
 ) {
-
     companion object {
         /** Default salt ID if none specified */
         const val DEFAULT_SALT_ID = "default"
@@ -70,43 +69,38 @@ class PasskeyVault(
      * @return Result containing EncryptionSession or error
      */
     suspend fun authenticateForEncryption(
-            platformContext: PlatformContext,
-            challenge: String,
-            rpId: String,
-            allowCredentials: List<CredentialDescriptor>,
-            saltId: String = DEFAULT_SALT_ID
-    ): Result<EncryptionSession> {
-        return try {
+        platformContext: PlatformContext,
+        challenge: String,
+        rpId: String,
+        allowCredentials: List<CredentialDescriptor>,
+        saltId: String = DEFAULT_SALT_ID,
+    ): Result<EncryptionSession> =
+        runCatching {
             // Get or create salt for this context
             val salt = saltStore.getOrCreateSalt(saltId)
 
             // Authenticate with passkey and get PRF output
             val authResult: PrfAuthResult =
-                    prfAuthenticator.authenticate(
-                            platformContext = platformContext,
-                            challenge = challenge,
-                            rpId = rpId,
-                            allowCredentials = allowCredentials,
-                            prfSalt = salt
-                    )
+                prfAuthenticator.authenticate(
+                    platformContext = platformContext,
+                    challenge = challenge,
+                    rpId = rpId,
+                    allowCredentials = allowCredentials,
+                    prfSalt = salt,
+                )
 
             val prfOutput =
-                    authResult.prfOutput
-                            ?: return Result.failure(
-                                    UnsupportedOperationException(
-                                            "PRF extension not supported by this authenticator"
-                                    )
-                            )
+                authResult.prfOutput
+                    ?: throw UnsupportedOperationException(
+                        "PRF extension not supported by this authenticator",
+                    )
 
             // Derive encryption key
             val keyBytes = KeyDerivation.deriveKey(prfOutput, saltId)
             val keyHash = KeyDerivation.getKeyHash(keyBytes)
 
-            Result.success(EncryptionSession(keyHash, saltId, keyBytes))
-        } catch (e: Exception) {
-            Result.failure(e)
+            EncryptionSession(keyHash, saltId, keyBytes)
         }
-    }
 
     /**
      * Encrypt bytes using an active session.
@@ -115,9 +109,10 @@ class PasskeyVault(
      * @param plaintext The data to encrypt
      * @return EncryptedBlob containing ciphertext, IV, and saltId
      */
-    suspend fun encrypt(session: EncryptionSession, plaintext: ByteArray): EncryptedBlob {
-        return EncryptionManager.encrypt(session, plaintext)
-    }
+    suspend fun encrypt(
+        session: EncryptionSession,
+        plaintext: ByteArray,
+    ): EncryptedBlob = EncryptionManager.encrypt(session, plaintext)
 
     /**
      * Encrypt a string using an active session.
@@ -126,9 +121,10 @@ class PasskeyVault(
      * @param plaintext The string to encrypt
      * @return EncryptedBlob containing ciphertext, IV, and saltId
      */
-    suspend fun encrypt(session: EncryptionSession, plaintext: String): EncryptedBlob {
-        return EncryptionManager.encryptString(session, plaintext)
-    }
+    suspend fun encrypt(
+        session: EncryptionSession,
+        plaintext: String,
+    ): EncryptedBlob = EncryptionManager.encryptString(session, plaintext)
 
     /**
      * Decrypt an EncryptedBlob using an active session.
@@ -137,9 +133,10 @@ class PasskeyVault(
      * @param blob The encrypted data
      * @return Decrypted bytes
      */
-    suspend fun decrypt(session: EncryptionSession, blob: EncryptedBlob): ByteArray {
-        return EncryptionManager.decrypt(session, blob)
-    }
+    suspend fun decrypt(
+        session: EncryptionSession,
+        blob: EncryptedBlob,
+    ): ByteArray = EncryptionManager.decrypt(session, blob)
 
     /**
      * Decrypt an EncryptedBlob to a string using an active session.
@@ -148,17 +145,16 @@ class PasskeyVault(
      * @param blob The encrypted data
      * @return Decrypted string
      */
-    suspend fun decryptToString(session: EncryptionSession, blob: EncryptedBlob): String {
-        return EncryptionManager.decryptString(session, blob)
-    }
+    suspend fun decryptToString(
+        session: EncryptionSession,
+        blob: EncryptedBlob,
+    ): String = EncryptionManager.decryptString(session, blob)
 
     /**
      * Check if a salt exists for the given ID. Useful to determine if encryption has been set up
      * for a context.
      */
-    fun hasSalt(saltId: String = DEFAULT_SALT_ID): Boolean {
-        return saltStore.hasSalt(saltId)
-    }
+    fun hasSalt(saltId: String = DEFAULT_SALT_ID): Boolean = saltStore.hasSalt(saltId)
 
     /**
      * Delete the salt for a given ID. Warning: This will make previously encrypted data

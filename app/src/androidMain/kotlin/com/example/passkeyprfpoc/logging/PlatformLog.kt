@@ -3,10 +3,10 @@ package com.example.passkeyprfpoc.logging
 import android.util.Log
 
 actual fun platformLog(
-        level: AppLogLevel,
-        tag: String,
-        message: String,
-        throwable: Throwable?
+    level: AppLogLevel,
+    tag: String,
+    message: String,
+    throwable: Throwable?,
 ) {
     when (level) {
         AppLogLevel.DEBUG -> Log.d(tag, message, throwable)

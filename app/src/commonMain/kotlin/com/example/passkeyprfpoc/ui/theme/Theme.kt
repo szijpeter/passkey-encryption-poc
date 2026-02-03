@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming", "MagicNumber")
+
 package com.example.passkeyprfpoc.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -8,27 +10,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme =
-        darkColorScheme(
-                primary = Color(0xFFBB86FC),
-                secondary = Color(0xFF03DAC6),
-                tertiary = Color(0xFF3700B3),
-                background = Color(0xFF121212),
-                surface = Color(0xFF1E1E1E)
-        )
+    darkColorScheme(
+        primary = Color(0xFFBB86FC),
+        secondary = Color(0xFF03DAC6),
+        tertiary = Color(0xFF3700B3),
+        background = Color(0xFF121212),
+        surface = Color(0xFF1E1E1E),
+    )
 
 private val LightColorScheme =
-        lightColorScheme(
-                primary = Color(0xFF6200EE),
-                secondary = Color(0xFF03DAC6),
-                tertiary = Color(0xFF3700B3),
-                background = Color(0xFFFFFBFE),
-                surface = Color(0xFFFFFBFE)
-        )
+    lightColorScheme(
+        primary = Color(0xFF6200EE),
+        secondary = Color(0xFF03DAC6),
+        tertiary = Color(0xFF3700B3),
+        background = Color(0xFFFFFBFE),
+        surface = Color(0xFFFFFBFE),
+    )
 
 @Composable
 fun PasskeyPRFPOCTheme(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        content: @Composable () -> Unit
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     MaterialTheme(colorScheme = colorScheme, content = content)

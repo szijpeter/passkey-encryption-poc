@@ -6,8 +6,9 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /** Manages PRF salts for different encryption contexts. */
-class SaltStore(private val settings: Settings = Settings()) {
-
+class SaltStore(
+    private val settings: Settings = Settings(),
+) {
     companion object {
         private const val SALT_SIZE = 32
     }

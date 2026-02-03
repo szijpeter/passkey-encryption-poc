@@ -11,9 +11,6 @@ import com.passkeyvault.model.CredentialDescriptor
 import com.passkeyvault.model.EncryptedBlob
 import com.passkeyvault.model.EncryptionSession
 import com.passkeyvault.platform.PlatformContext
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,13 +19,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.random.Random
 
 class MainViewModel {
-
     companion object {
         private const val TEST_PLAINTEXT =
-                "Hello, this is a secret message encrypted with a passkey-derived key! 🔐"
+            "Hello, this is a secret message encrypted with a passkey-derived key! 🔐"
         private const val VAULT_SALT_ID = "demo-encryption"
+        private const val USER_ID_SUFFIX_RANGE = 1_000_000
+        private const val CHALLENGE_PREVIEW_LENGTH = 20
+        private const val CREDENTIAL_ID_PREVIEW_LENGTH = 20
+        private const val CIPHERTEXT_PREVIEW_LENGTH = 40
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -51,12 +54,12 @@ class MainViewModel {
             storage.serverUrl = savedUrl
             apiClient = ApiClient(savedUrl)
             _uiState.value =
-                    _uiState.value.copy(
-                            serverUrl = savedUrl,
-                            isServerConfigured = true,
-                            hasPasskey = storage.hasPasskey,
-                            hasEncryptedData = storage.hasEncryptedData()
-                    )
+                _uiState.value.copy(
+                    serverUrl = savedUrl,
+                    isServerConfigured = true,
+                    hasPasskey = storage.hasPasskey,
+                    hasEncryptedData = storage.hasEncryptedData(),
+                )
         }
     }
 
@@ -74,55 +77,57 @@ class MainViewModel {
     /** Create a new passkey. */
     fun createPasskey(platformContext: PlatformContext) {
         val client =
-                apiClient
-                        ?: run {
-                            addLog("Error: Server not configured")
-                            return
-                        }
+            apiClient
+                ?: run {
+                    addLog("Error: Server not configured")
+                    return
+                }
 
         scope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             addLog("Starting passkey registration...")
 
-            try {
-                val userId = "user-${Random.nextInt(1_000_000)}"
+            runCatching {
+                val userId = "user-${Random.nextInt(USER_ID_SUFFIX_RANGE)}"
                 val userName = "POC User"
 
                 addLog("Fetching registration options...")
                 val options = client.getRegistrationOptions(userId, userName)
-                addLog("Got challenge: ${options.challenge.take(20)}...")
+                addLog("Got challenge: ${options.challenge.take(CHALLENGE_PREVIEW_LENGTH)}...")
                 addLog("RP ID: ${options.rp.id}")
 
                 addLog("Creating passkey with PRF extension...")
                 val result = passkeyManager.createPasskey(platformContext, options)
 
                 result.fold(
-                        onSuccess = { credentialJson ->
-                            addLog("Passkey created locally, verifying with server...")
+                    onSuccess = { credentialJson ->
+                        addLog("Passkey created locally, verifying with server...")
 
-                            val verifyResult = client.verifyRegistration(userId, credentialJson)
+                        val verifyResult = client.verifyRegistration(userId, credentialJson)
 
-                            if (verifyResult.success) {
-                                storage.hasPasskey = true
-                                storage.userId = userId
-                                storage.credentialId = verifyResult.credentialId
+                        if (verifyResult.success) {
+                            storage.hasPasskey = true
+                            storage.userId = userId
+                            storage.credentialId = verifyResult.credentialId
 
-                                _uiState.value =
-                                        _uiState.value.copy(hasPasskey = true, isLoading = false)
-                                addLog("✅ Passkey registered successfully!")
-                                addLog("Credential ID: ${verifyResult.credentialId?.take(20)}...")
-                            } else {
-                                addLog("❌ Server verification failed: ${verifyResult.message}")
-                                _uiState.value = _uiState.value.copy(isLoading = false)
-                            }
-                        },
-                        onFailure = { error ->
-                            addLog("❌ Failed to create passkey: ${error.message}")
+                            _uiState.value =
+                                _uiState.value.copy(hasPasskey = true, isLoading = false)
+                            addLog("✅ Passkey registered successfully!")
+                            addLog(
+                                "Credential ID: ${verifyResult.credentialId?.take(CREDENTIAL_ID_PREVIEW_LENGTH)}...",
+                            )
+                        } else {
+                            addLog("❌ Server verification failed: ${verifyResult.message}")
                             _uiState.value = _uiState.value.copy(isLoading = false)
                         }
+                    },
+                    onFailure = { error ->
+                        addLog("❌ Failed to create passkey: ${error.message}")
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                    },
                 )
-            } catch (e: Exception) {
-                addLog("❌ Error: ${e.message}")
+            }.onFailure { error ->
+                addLog("❌ Error: ${error.message}")
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
@@ -131,65 +136,67 @@ class MainViewModel {
     /** Encrypt test data using PasskeyVault SDK. */
     fun encryptData(platformContext: PlatformContext) {
         val client =
-                apiClient
-                        ?: run {
-                            addLog("Error: Server not configured")
-                            return
-                        }
+            apiClient
+                ?: run {
+                    addLog("Error: Server not configured")
+                    return
+                }
 
         scope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             addLog("Starting encryption with PasskeyVault SDK...")
 
-            try {
+            runCatching {
                 addLog("Fetching auth options...")
                 val options = client.getAuthenticationOptions()
-                addLog("Got challenge: ${options.challenge.take(20)}...")
+                addLog("Got challenge: ${options.challenge.take(CHALLENGE_PREVIEW_LENGTH)}...")
 
-                val credentials = options.allowCredentials.map { cred ->
-                    CredentialDescriptor(id = cred.id, transports = cred.transports)
-                }
+                val credentials =
+                    options.allowCredentials.map { cred ->
+                        CredentialDescriptor(id = cred.id, transports = cred.transports)
+                    }
 
                 addLog("Authenticating for encryption via SDK...")
-                val sessionResult = vault.authenticateForEncryption(
-                    platformContext = platformContext,
-                    challenge = options.challenge,
-                    rpId = options.rpId,
-                    allowCredentials = credentials,
-                    saltId = VAULT_SALT_ID
-                )
+                val sessionResult =
+                    vault.authenticateForEncryption(
+                        platformContext = platformContext,
+                        challenge = options.challenge,
+                        rpId = options.rpId,
+                        allowCredentials = credentials,
+                        saltId = VAULT_SALT_ID,
+                    )
 
                 sessionResult.fold(
-                        onSuccess = { session ->
-                            currentSession = session
-                            addLog("✅ Encryption session created!")
-                            addLog("Session key hash: ${session.keyHash}")
+                    onSuccess = { session ->
+                        currentSession = session
+                        addLog("✅ Encryption session created!")
+                        addLog("Session key hash: ${session.keyHash}")
 
-                            addLog("Encrypting test data...")
-                            val encrypted = vault.encrypt(session, TEST_PLAINTEXT)
+                        addLog("Encrypting test data...")
+                        val encrypted = vault.encrypt(session, TEST_PLAINTEXT)
 
-                            val blobBytes = encrypted.toBytes()
-                            storage.saveEncryptedBlob(blobBytes)
+                        val blobBytes = encrypted.toBytes()
+                        storage.saveEncryptedBlob(blobBytes)
 
-                            val ciphertextB64 = encrypted.ciphertext.encodeBase64()
+                        val ciphertextB64 = encrypted.ciphertext.encodeBase64()
 
-                            _uiState.value =
-                                    _uiState.value.copy(
-                                            isLoading = false,
-                                            hasEncryptedData = true,
-                                            encryptedDataB64 = ciphertextB64,
-                                            lastKeyHash = session.keyHash
-                                    )
-                            addLog("✅ Encryption complete!")
-                            addLog("Ciphertext: ${ciphertextB64.take(40)}...")
-                        },
-                        onFailure = { error ->
-                            addLog("❌ SDK encryption failed: ${error.message}")
-                            _uiState.value = _uiState.value.copy(isLoading = false)
-                        }
+                        _uiState.value =
+                            _uiState.value.copy(
+                                isLoading = false,
+                                hasEncryptedData = true,
+                                encryptedDataB64 = ciphertextB64,
+                                lastKeyHash = session.keyHash,
+                            )
+                        addLog("✅ Encryption complete!")
+                        addLog("Ciphertext: ${ciphertextB64.take(CIPHERTEXT_PREVIEW_LENGTH)}...")
+                    },
+                    onFailure = { error ->
+                        addLog("❌ SDK encryption failed: ${error.message}")
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                    },
                 )
-            } catch (e: Exception) {
-                addLog("❌ Error: ${e.message}")
+            }.onFailure { error ->
+                addLog("❌ Error: ${error.message}")
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
@@ -198,11 +205,11 @@ class MainViewModel {
     /** Decrypt stored data using PasskeyVault SDK. */
     fun decryptData(platformContext: PlatformContext) {
         val client =
-                apiClient
-                        ?: run {
-                            addLog("Error: Server not configured")
-                            return
-                        }
+            apiClient
+                ?: run {
+                    addLog("Error: Server not configured")
+                    return
+                }
 
         if (!storage.hasEncryptedData()) {
             addLog("No encrypted data to decrypt")
@@ -213,64 +220,68 @@ class MainViewModel {
             _uiState.value = _uiState.value.copy(isLoading = true)
             addLog("Starting decryption with PasskeyVault SDK...")
 
-            try {
+            runCatching {
                 addLog("Fetching auth options...")
                 val options = client.getAuthenticationOptions()
 
-                val credentials = options.allowCredentials.map { cred ->
-                    CredentialDescriptor(id = cred.id, transports = cred.transports)
-                }
+                val credentials =
+                    options.allowCredentials.map { cred ->
+                        CredentialDescriptor(id = cred.id, transports = cred.transports)
+                    }
 
                 addLog("Authenticating for decryption via SDK...")
-                val sessionResult = vault.authenticateForEncryption(
-                    platformContext = platformContext,
-                    challenge = options.challenge,
-                    rpId = options.rpId,
-                    allowCredentials = credentials,
-                    saltId = VAULT_SALT_ID
-                )
+                val sessionResult =
+                    vault.authenticateForEncryption(
+                        platformContext = platformContext,
+                        challenge = options.challenge,
+                        rpId = options.rpId,
+                        allowCredentials = credentials,
+                        saltId = VAULT_SALT_ID,
+                    )
 
-                sessionResult.fold(
-                        onSuccess = { session ->
-                            currentSession = session
-                            addLog("✅ Decryption session created!")
-                            addLog("Session key hash: ${session.keyHash}")
-
-                            val lastHash = _uiState.value.lastKeyHash
-                            if (lastHash != null && lastHash == session.keyHash) {
-                                addLog("✅ Key hash matches encryption session!")
-                            }
-
-                            val blobBytes = storage.getEncryptedBlob()
-                                ?: run {
-                                    addLog("❌ No encrypted blob found")
-                                    _uiState.value = _uiState.value.copy(isLoading = false)
-                                    return@fold
-                                }
-                            val blob = EncryptedBlob.fromBytes(blobBytes)
-
-                            addLog("Decrypting data...")
-                            val plaintext = vault.decryptToString(session, blob)
-
-                            _uiState.value =
-                                    _uiState.value.copy(
-                                            isLoading = false,
-                                            decryptedText = plaintext,
-                                            lastKeyHash = session.keyHash
-                                    )
-                            addLog("✅ Decryption successful!")
-                            addLog("Plaintext: $plaintext")
-                        },
-                        onFailure = { error ->
-                            addLog("❌ SDK decryption failed: ${error.message}")
-                            _uiState.value = _uiState.value.copy(isLoading = false)
-                        }
-                )
-            } catch (e: Exception) {
-                addLog("❌ Error: ${e.message}")
+                val session =
+                    sessionResult.getOrElse { error ->
+                        addLog("❌ SDK decryption failed: ${error.message}")
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                        return@runCatching
+                    }
+                handleDecryptionSession(session)
+            }.onFailure { error ->
+                addLog("❌ Error: ${error.message}")
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
+    }
+
+    private suspend fun handleDecryptionSession(session: EncryptionSession) {
+        currentSession = session
+        addLog("✅ Decryption session created!")
+        addLog("Session key hash: ${session.keyHash}")
+
+        val lastHash = _uiState.value.lastKeyHash
+        if (lastHash != null && lastHash == session.keyHash) {
+            addLog("✅ Key hash matches encryption session!")
+        }
+
+        val blobBytes = storage.getEncryptedBlob()
+        if (blobBytes == null) {
+            addLog("❌ No encrypted blob found")
+            _uiState.value = _uiState.value.copy(isLoading = false)
+            return
+        }
+
+        val blob = EncryptedBlob.fromBytes(blobBytes)
+        addLog("Decrypting data...")
+        val plaintext = vault.decryptToString(session, blob)
+
+        _uiState.value =
+            _uiState.value.copy(
+                isLoading = false,
+                decryptedText = plaintext,
+                lastKeyHash = session.keyHash,
+            )
+        addLog("✅ Decryption successful!")
+        addLog("Plaintext: $plaintext")
     }
 
     /** Reset all data. */
@@ -306,23 +317,22 @@ class MainViewModel {
 private fun ByteArray.encodeBase64(): String = Base64.Default.encode(this)
 
 data class UiState(
-        val serverUrl: String = "",
-        val isServerConfigured: Boolean = false,
-        val isLoading: Boolean = false,
-        val hasPasskey: Boolean = false,
-        val hasEncryptedData: Boolean = false,
-        val encryptedDataB64: String? = null,
-        val decryptedText: String? = null,
-        val lastPrfHash: String? = null,
-        val lastKeyHash: String? = null,
-        val logs: List<String> = emptyList()
+    val serverUrl: String = "",
+    val isServerConfigured: Boolean = false,
+    val isLoading: Boolean = false,
+    val hasPasskey: Boolean = false,
+    val hasEncryptedData: Boolean = false,
+    val encryptedDataB64: String? = null,
+    val decryptedText: String? = null,
+    val lastPrfHash: String? = null,
+    val lastKeyHash: String? = null,
+    val logs: List<String> = emptyList(),
 )
 
-private fun String.toLogLevel(): AppLogLevel {
-    return when {
+private fun String.toLogLevel(): AppLogLevel =
+    when {
         contains("❌") -> AppLogLevel.ERROR
         contains("⚠️") -> AppLogLevel.WARN
         contains("✅") -> AppLogLevel.INFO
         else -> AppLogLevel.DEBUG
     }
-}

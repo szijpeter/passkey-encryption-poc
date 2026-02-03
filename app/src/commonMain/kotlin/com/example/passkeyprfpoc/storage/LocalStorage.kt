@@ -8,8 +8,9 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * Local storage for passkey data and encrypted content. Uses multiplatform Settings for
  * persistence (backed by SharedPreferences on Android and NSUserDefaults on iOS).
  */
-class LocalStorage(private val settings: Settings = Settings()) {
-
+class LocalStorage(
+    private val settings: Settings = Settings(),
+) {
     companion object {
         private const val KEY_HAS_PASSKEY = "has_passkey"
         private const val KEY_CREDENTIAL_ID = "credential_id"
@@ -19,6 +20,7 @@ class LocalStorage(private val settings: Settings = Settings()) {
         private const val KEY_ENCRYPTED_IV = "encrypted_iv"
         private const val KEY_ENCRYPTED_BLOB = "encrypted_blob"
         private const val KEY_SERVER_URL = "server_url"
+        private const val PRF_SALT_LENGTH = 32
     }
 
     // Passkey status
@@ -30,15 +32,21 @@ class LocalStorage(private val settings: Settings = Settings()) {
     var credentialId: String?
         get() = settings.getStringOrNull(KEY_CREDENTIAL_ID)
         set(value) {
-            if (value == null) settings.remove(KEY_CREDENTIAL_ID)
-            else settings.putString(KEY_CREDENTIAL_ID, value)
+            if (value == null) {
+                settings.remove(KEY_CREDENTIAL_ID)
+            } else {
+                settings.putString(KEY_CREDENTIAL_ID, value)
+            }
         }
 
     var userId: String?
         get() = settings.getStringOrNull(KEY_USER_ID)
         set(value) {
-            if (value == null) settings.remove(KEY_USER_ID)
-            else settings.putString(KEY_USER_ID, value)
+            if (value == null) {
+                settings.remove(KEY_USER_ID)
+            } else {
+                settings.putString(KEY_USER_ID, value)
+            }
         }
 
     // PRF Salt
@@ -56,7 +64,7 @@ class LocalStorage(private val settings: Settings = Settings()) {
         val existing = getPrfSalt()
         if (existing != null) return existing
 
-        val salt = ByteArray(32)
+        val salt = ByteArray(PRF_SALT_LENGTH)
         kotlin.random.Random.nextBytes(salt)
         savePrfSalt(salt)
         return salt
@@ -64,21 +72,27 @@ class LocalStorage(private val settings: Settings = Settings()) {
 
     // Encrypted data (legacy - for direct crypto usage)
 
-    fun saveEncryptedData(ciphertext: ByteArray, iv: ByteArray) {
+    fun saveEncryptedData(
+        ciphertext: ByteArray,
+        iv: ByteArray,
+    ) {
         settings.putString(KEY_ENCRYPTED_CIPHERTEXT, ciphertext.encodeBase64())
         settings.putString(KEY_ENCRYPTED_IV, iv.encodeBase64())
     }
 
     fun getEncryptedData(): Pair<ByteArray, ByteArray>? {
-        val ciphertextB64 = settings.getStringOrNull(KEY_ENCRYPTED_CIPHERTEXT) ?: return null
-        val ivB64 = settings.getStringOrNull(KEY_ENCRYPTED_IV) ?: return null
-        return ciphertextB64.decodeBase64() to ivB64.decodeBase64()
+        val ciphertextB64 = settings.getStringOrNull(KEY_ENCRYPTED_CIPHERTEXT)
+        val ivB64 = settings.getStringOrNull(KEY_ENCRYPTED_IV)
+        return if (ciphertextB64 != null && ivB64 != null) {
+            ciphertextB64.decodeBase64() to ivB64.decodeBase64()
+        } else {
+            null
+        }
     }
 
-    fun hasEncryptedData(): Boolean {
-        return (settings.hasKey(KEY_ENCRYPTED_CIPHERTEXT) && settings.hasKey(KEY_ENCRYPTED_IV)) ||
-                settings.hasKey(KEY_ENCRYPTED_BLOB)
-    }
+    fun hasEncryptedData(): Boolean =
+        (settings.hasKey(KEY_ENCRYPTED_CIPHERTEXT) && settings.hasKey(KEY_ENCRYPTED_IV)) ||
+            settings.hasKey(KEY_ENCRYPTED_BLOB)
 
     // Encrypted blob (for SDK usage)
 

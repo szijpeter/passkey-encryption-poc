@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package com.example.passkeyprfpoc
 
 import androidx.compose.runtime.Composable

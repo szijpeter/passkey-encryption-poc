@@ -78,6 +78,34 @@ passkey-encryption-poc/
 - Apple Silicon recommended for iOS simulator builds (iosSimulatorArm64)
 - ngrok account (free tier works)
 - JDK 17+
+- SwiftLint (for iOS linting)
+- SwiftFormat (for iOS formatting)
+
+## Quality
+
+Run Kotlin and Android linting:
+
+```bash
+./gradlew check
+```
+
+Format Kotlin:
+
+```bash
+./gradlew ktlintFormat
+```
+
+Lint Swift:
+
+```bash
+./scripts/lint-ios.sh
+```
+
+Format Swift:
+
+```bash
+./scripts/format-ios.sh
+```
 
 ## Quick Start
 

@@ -1,0 +1,10 @@
+reporter: "xcode"
+included:
+  - iosApp
+excluded:
+  - iosApp.xcodeproj
+disabled_rules:
+  - line_length
+type_name:
+  excluded:
+    - iOSApp

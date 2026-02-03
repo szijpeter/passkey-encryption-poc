@@ -5,6 +5,4 @@ import androidx.compose.ui.uikit.LocalUIViewController
 import com.passkeyvault.platform.PlatformContext
 
 @Composable
-actual fun rememberPlatformContext(): PlatformContext {
-    return LocalUIViewController.current
-}
+actual fun rememberPlatformContext(): PlatformContext = LocalUIViewController.current

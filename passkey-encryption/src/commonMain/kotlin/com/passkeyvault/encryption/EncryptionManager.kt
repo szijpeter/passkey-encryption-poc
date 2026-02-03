@@ -10,14 +10,16 @@ import dev.whyoleg.cryptography.random.CryptographyRandom
 /** Handles AES-GCM encryption and decryption. */
 @OptIn(DelicateCryptographyApi::class)
 internal object EncryptionManager {
-
     private const val GCM_IV_LENGTH_BYTES = 12
 
     private val provider = CryptographyProvider.Default
     private val aesGcm = provider.get(AES.GCM)
 
     /** Encrypt plaintext bytes using AES-GCM. */
-    suspend fun encrypt(session: EncryptionSession, plaintext: ByteArray): EncryptedBlob {
+    suspend fun encrypt(
+        session: EncryptionSession,
+        plaintext: ByteArray,
+    ): EncryptedBlob {
         session.requireValid()
 
         val iv = CryptographyRandom.nextBytes(GCM_IV_LENGTH_BYTES)
@@ -29,7 +31,10 @@ internal object EncryptionManager {
     }
 
     /** Decrypt ciphertext using AES-GCM. */
-    suspend fun decrypt(session: EncryptionSession, blob: EncryptedBlob): ByteArray {
+    suspend fun decrypt(
+        session: EncryptionSession,
+        blob: EncryptedBlob,
+    ): ByteArray {
         session.requireValid()
 
         val key = aesGcm.keyDecoder().decodeFromByteArray(AES.Key.Format.RAW, session.keyBytes)
@@ -38,12 +43,14 @@ internal object EncryptionManager {
     }
 
     /** Encrypt a string to EncryptedBlob. */
-    suspend fun encryptString(session: EncryptionSession, plaintext: String): EncryptedBlob {
-        return encrypt(session, plaintext.encodeToByteArray())
-    }
+    suspend fun encryptString(
+        session: EncryptionSession,
+        plaintext: String,
+    ): EncryptedBlob = encrypt(session, plaintext.encodeToByteArray())
 
     /** Decrypt EncryptedBlob to a string. */
-    suspend fun decryptString(session: EncryptionSession, blob: EncryptedBlob): String {
-        return decrypt(session, blob).decodeToString()
-    }
+    suspend fun decryptString(
+        session: EncryptionSession,
+        blob: EncryptedBlob,
+    ): String = decrypt(session, blob).decodeToString()
 }
