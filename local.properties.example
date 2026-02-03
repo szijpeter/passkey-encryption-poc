@@ -1,0 +1,26 @@
+## This file must *NOT* be checked into Version Control Systems,
+# as it contains information specific to your local configuration.
+#
+# Location of the SDK. This is only used by Gradle.
+# For customization when using a Version Control System, please read the
+# header note.
+#
+#sdk.dir=/Users/yourname/Library/Android/sdk
+
+# Server URL (auto-updated by start-server.sh)
+#server.url=https://your-ngrok-domain.ngrok-free.dev
+
+# Android signing fingerprint (required)
+android.sha256=AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
+
+# Optional: pin ngrok to a static domain
+#ngrok.domain=your-ngrok-domain.ngrok-free.dev
+
+# iOS app identifiers (used for Apple App Site Association)
+#ios.teamId=YOURTEAMID
+#ios.bundleId=com.example.passkeyprfpoc.ios
+#ios.appId=YOURTEAMID.com.example.passkeyprfpoc.ios
+
+# Set to false if you are using a free Apple account and want to build without
+# the Associated Domains entitlement (passkeys for your domain will not work).
+#ios.associatedDomains=false

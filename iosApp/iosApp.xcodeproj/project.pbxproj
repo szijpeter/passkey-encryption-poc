@@ -1,0 +1,274 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1B2C3D4E5F6A1B2C3D4E603 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A1B2C3D4E607 /* iOSApp.swift */; };
+		A1B2C3D4E5F6A1B2C3D4E604 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A1B2C3D4E608 /* ComposeView.swift */; };
+		A1B2C3D4E5F6A1B2C3D4E605 /* ComposeApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A1B2C3D4E60B /* ComposeApp.framework */; };
+		A1B2C3D4E5F6A1B2C3D4E606 /* ComposeApp.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A1B2C3D4E60B /* ComposeApp.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1B2C3D4E5F6A1B2C3D4E601 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				A1B2C3D4E5F6A1B2C3D4E606 /* ComposeApp.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		A1B2C3D4E5F6A1B2C3D4E607 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A1B2C3D4E608 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A1B2C3D4E609 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A1B2C3D4E60A /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F6A1B2C3D4E60B /* ComposeApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ComposeApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1B2C3D4E5F6A1B2C3D4E5F9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F6A1B2C3D4E605 /* ComposeApp.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1B2C3D4E5F6A1B2C3D4E60C = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6A1B2C3D4E60D /* iosApp */,
+				A1B2C3D4E5F6A1B2C3D4E60F /* Frameworks */,
+				A1B2C3D4E5F6A1B2C3D4E60E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6A1B2C3D4E60D /* iosApp */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6A1B2C3D4E607 /* iOSApp.swift */,
+				A1B2C3D4E5F6A1B2C3D4E608 /* ComposeView.swift */,
+				A1B2C3D4E5F6A1B2C3D4E609 /* Info.plist */,
+			);
+			path = iosApp;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6A1B2C3D4E60E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6A1B2C3D4E60A /* iosApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1B2C3D4E5F6A1B2C3D4E60F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2C3D4E5F6A1B2C3D4E60B /* ComposeApp.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1B2C3D4E5F6A1B2C3D4E5F7 /* iosApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1B2C3D4E5F6A1B2C3D4E615 /* Build configuration list for PBXNativeTarget "iosApp" */;
+			buildPhases = (
+				A1B2C3D4E5F6A1B2C3D4E602 /* Build ComposeApp framework */,
+				A1B2C3D4E5F6A1B2C3D4E5F8 /* Sources */,
+				A1B2C3D4E5F6A1B2C3D4E5F9 /* Frameworks */,
+				A1B2C3D4E5F6A1B2C3D4E601 /* CopyFiles */,
+				A1B2C3D4E5F6A1B2C3D4E600 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = iosApp;
+			productName = iosApp;
+			productReference = A1B2C3D4E5F6A1B2C3D4E60A /* iosApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1B2C3D4E5F6A1B2C3D4E5F6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A1B2C3D4E5F6A1B2C3D4E5F7 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1B2C3D4E5F6A1B2C3D4E614 /* Build configuration list for PBXProject "iosApp" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = A1B2C3D4E5F6A1B2C3D4E60C;
+			productRefGroup = A1B2C3D4E5F6A1B2C3D4E60E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1B2C3D4E5F6A1B2C3D4E5F7 /* iosApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1B2C3D4E5F6A1B2C3D4E600 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A1B2C3D4E5F6A1B2C3D4E602 /* Build ComposeApp framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Build ComposeApp framework";
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/ComposeApp.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eo pipefail\n\nPROJECT_ROOT=\"$SRCROOT/..\"\n\nif [[ \"$PLATFORM_NAME\" == \"iphonesimulator\" ]]; then\n  if [[ \"$ARCHS\" == *\"x86_64\"* ]]; then\n    KONAN_TARGET=\"iosX64\"\n  else\n    KONAN_TARGET=\"iosSimulatorArm64\"\n  fi\nelse\n  KONAN_TARGET=\"iosArm64\"\nfi\n\nif [[ \"$CONFIGURATION\" == \"Debug\" ]]; then\n  CONFIGURATION_TASK=\"Debug\"\n  CONFIGURATION_FOLDER=\"debug\"\nelse\n  CONFIGURATION_TASK=\"Release\"\n  CONFIGURATION_FOLDER=\"release\"\nfi\n\n\"$PROJECT_ROOT/gradlew\" -p \"$PROJECT_ROOT\" :app:link${CONFIGURATION_TASK}Framework${KONAN_TARGET}\n\nFRAMEWORK_DIR=\"$PROJECT_ROOT/app/build/bin/${KONAN_TARGET}/${CONFIGURATION_FOLDER}Framework\"\nrsync -a --delete \"$FRAMEWORK_DIR/ComposeApp.framework\" \"$BUILT_PRODUCTS_DIR\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1B2C3D4E5F6A1B2C3D4E5F8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1B2C3D4E5F6A1B2C3D4E603 /* iOSApp.swift in Sources */,
+				A1B2C3D4E5F6A1B2C3D4E604 /* ComposeView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1B2C3D4E5F6A1B2C3D4E610 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F6A1B2C3D4E611 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1B2C3D4E5F6A1B2C3D4E612 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X23DCM8Q83;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				INFOPLIST_FILE = iosApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.passkeyprfpoc.ios;
+				PRODUCT_NAME = iosApp;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A1B2C3D4E5F6A1B2C3D4E613 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.generated.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X23DCM8Q83;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				INFOPLIST_FILE = iosApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.passkeyprfpoc.ios;
+				PRODUCT_NAME = iosApp;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1B2C3D4E5F6A1B2C3D4E614 /* Build configuration list for PBXProject "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6A1B2C3D4E610 /* Debug */,
+				A1B2C3D4E5F6A1B2C3D4E611 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A1B2C3D4E5F6A1B2C3D4E615 /* Build configuration list for PBXNativeTarget "iosApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1B2C3D4E5F6A1B2C3D4E612 /* Debug */,
+				A1B2C3D4E5F6A1B2C3D4E613 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1B2C3D4E5F6A1B2C3D4E5F6 /* Project object */;
+}
