@@ -3,7 +3,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
@@ -16,12 +16,10 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val serverUrl = localProperties.getProperty("server.url", "https://YOUR_NGROK_URL")
-val serverHost = serverUrl
-        .removePrefix("https://")
-        .removePrefix("http://")
-        .substringBefore("/")
 
+val sanitizedServerUrl = serverUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 val iosGeneratedDir = layout.buildDirectory.dir("generated/iosMain/kotlin")
+val androidGeneratedDir = layout.buildDirectory.dir("generated/androidMain/kotlin")
 val generateIosServerConfig by tasks.registering {
     outputs.dir(iosGeneratedDir)
 
@@ -30,14 +28,34 @@ val generateIosServerConfig by tasks.registering {
         val packageDir = File(targetDir, "com/example/passkeyprfpoc/platform")
         packageDir.mkdirs()
 
-        val sanitizedUrl = serverUrl.replace("\\", "\\\\").replace("\"", "\\\"")
         val outputFile = File(packageDir, "IosServerConfig.kt")
         outputFile.writeText(
             """
             package com.example.passkeyprfpoc.platform
 
             internal object IosServerConfig {
-                const val DEFAULT_SERVER_URL: String = "$sanitizedUrl"
+                const val DEFAULT_SERVER_URL: String = "$sanitizedServerUrl"
+            }
+            """.trimIndent()
+        )
+    }
+}
+
+val generateAndroidServerConfig by tasks.registering {
+    outputs.dir(androidGeneratedDir)
+
+    doLast {
+        val targetDir = androidGeneratedDir.get().asFile
+        val packageDir = File(targetDir, "com/example/passkeyprfpoc/platform")
+        packageDir.mkdirs()
+
+        val outputFile = File(packageDir, "AndroidServerConfig.kt")
+        outputFile.writeText(
+            """
+            package com.example.passkeyprfpoc.platform
+
+            internal object AndroidServerConfig {
+                const val DEFAULT_SERVER_URL: String = "$sanitizedServerUrl"
             }
             """.trimIndent()
         )
@@ -47,7 +65,11 @@ val generateIosServerConfig by tasks.registering {
 kotlin {
     applyDefaultHierarchyTemplate()
 
-    androidTarget {
+    android {
+        namespace = "com.example.passkeyprfpoc.shared"
+        compileSdk = 36
+        minSdk = 28
+
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
@@ -55,7 +77,6 @@ kotlin {
 
     val iosTargets =
             listOf(
-                    iosX64(),
                     iosArm64(),
                     iosSimulatorArm64()
             )
@@ -84,8 +105,8 @@ kotlin {
             }
         }
         val androidMain by getting {
+            kotlin.srcDir(androidGeneratedDir)
             dependencies {
-                implementation(libs.activity.compose)
                 implementation(libs.credentials)
                 implementation(libs.credentials.play.services)
                 implementation(libs.ktor.client.android)
@@ -101,46 +122,12 @@ kotlin {
     }
 }
 
-tasks.matching { it.name.startsWith("compileKotlinIos") }.configureEach {
+tasks.matching {
+    it.name.startsWith("compileIos") || it.name.startsWith("compileKotlinIos")
+}.configureEach {
     dependsOn(generateIosServerConfig)
 }
 
-android {
-    namespace = "com.example.passkeyprfpoc"
-    compileSdk = 36
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-
-    defaultConfig {
-        applicationId = "com.example.passkeyprfpoc"
-        minSdk = 28
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-
-        // Server URL from local.properties (set by start-server.sh)
-        buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
-        manifestPlaceholders["SERVER_HOST"] = serverHost
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
+tasks.matching { it.name.startsWith("compileAndroid") }.configureEach {
+    dependsOn(generateAndroidServerConfig)
 }

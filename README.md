@@ -58,10 +58,11 @@ The **[PRF (Pseudo-Random Function) extension](https://w3c.github.io/webauthn/#p
 
 ```
 passkey-encryption-poc/
-├── app/                     # KMP app (Compose UI + shared logic)
+├── app/                     # KMP shared module (Compose UI + shared logic)
 │   ├── src/commonMain/       # Shared code for Android + iOS
 │   ├── src/androidMain/      # Android-specific integrations
 │   └── src/iosMain/          # iOS-specific integrations
+├── androidApp/              # Android app wrapper (entrypoint + resources)
 ├── passkey-encryption/       # Shared passkey + encryption library
 ├── iosApp/                   # iOS Xcode wrapper project
 ├── server/                   # Ktor backend (Kotlin)
@@ -74,6 +75,7 @@ passkey-encryption-poc/
 - Android device with Android 14+
 - iOS 18+ for PRF support on Apple platforms
 - Xcode 15+ for iOS builds
+- Apple Silicon recommended for iOS simulator builds (iosSimulatorArm64)
 - ngrok account (free tier works)
 - JDK 17+
 
@@ -83,7 +85,7 @@ passkey-encryption-poc/
 
 ```bash
 cd passkey-encryption-poc
-./gradlew :app:signingReport
+./gradlew :androidApp:signingReport
 ```
 
 Look for `SHA256:` under `Variant: debug`.

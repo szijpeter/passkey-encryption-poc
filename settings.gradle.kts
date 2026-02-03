@@ -17,5 +17,6 @@ dependencyResolutionManagement {
 rootProject.name = "passkey-encryption-poc"
 
 include(":app")
+include(":androidApp")
 include(":server")
 include(":passkey-encryption")

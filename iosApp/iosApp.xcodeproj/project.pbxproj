@@ -157,7 +157,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eo pipefail\n\nPROJECT_ROOT=\"$SRCROOT/..\"\n\nif [[ \"$PLATFORM_NAME\" == \"iphonesimulator\" ]]; then\n  if [[ \"$ARCHS\" == *\"x86_64\"* ]]; then\n    KONAN_TARGET=\"iosX64\"\n  else\n    KONAN_TARGET=\"iosSimulatorArm64\"\n  fi\nelse\n  KONAN_TARGET=\"iosArm64\"\nfi\n\nif [[ \"$CONFIGURATION\" == \"Debug\" ]]; then\n  CONFIGURATION_TASK=\"Debug\"\n  CONFIGURATION_FOLDER=\"debug\"\nelse\n  CONFIGURATION_TASK=\"Release\"\n  CONFIGURATION_FOLDER=\"release\"\nfi\n\n\"$PROJECT_ROOT/gradlew\" -p \"$PROJECT_ROOT\" :app:link${CONFIGURATION_TASK}Framework${KONAN_TARGET}\n\nFRAMEWORK_DIR=\"$PROJECT_ROOT/app/build/bin/${KONAN_TARGET}/${CONFIGURATION_FOLDER}Framework\"\nrsync -a --delete \"$FRAMEWORK_DIR/ComposeApp.framework\" \"$BUILT_PRODUCTS_DIR\"\n";
+			shellScript = "set -eo pipefail\n\nPROJECT_ROOT=\"$SRCROOT/..\"\n\nif [[ \"$PLATFORM_NAME\" == \"iphonesimulator\" ]]; then\n  KONAN_TARGET=\"iosSimulatorArm64\"\nelse\n  KONAN_TARGET=\"iosArm64\"\nfi\n\nif [[ \"$CONFIGURATION\" == \"Debug\" ]]; then\n  CONFIGURATION_TASK=\"Debug\"\n  CONFIGURATION_FOLDER=\"debug\"\nelse\n  CONFIGURATION_TASK=\"Release\"\n  CONFIGURATION_FOLDER=\"release\"\nfi\n\n\"$PROJECT_ROOT/gradlew\" -p \"$PROJECT_ROOT\" :app:link${CONFIGURATION_TASK}Framework${KONAN_TARGET}\n\nFRAMEWORK_DIR=\"$PROJECT_ROOT/app/build/bin/${KONAN_TARGET}/${CONFIGURATION_FOLDER}Framework\"\nrsync -a --delete \"$FRAMEWORK_DIR/ComposeApp.framework\" \"$BUILT_PRODUCTS_DIR\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
